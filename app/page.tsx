@@ -1,0 +1,407 @@
+"use client";
+
+import { useConvexAuth } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
+import {
+  AlertTriangle,
+  Check,
+  ClipboardList,
+  Crown,
+  ShoppingBag,
+  Sparkles,
+  Star,
+} from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
+
+import PaywallModal from "@/components/payments/PaywallModal";
+import { PLAN_DISPLAY } from "@/config/planDisplay";
+import { api } from "@/convex/_generated/api";
+import { useAuthActions } from "@convex-dev/auth/react";
+
+// ─── Translation dictionary ───────────────────────────────────────────────────
+const translations = {
+  he: {
+    switchLabel: "العربية",
+    tagline: "המומחה האישי שלך לצבע שיער",
+    card1Title: "נוסחה מקצועית",
+    card1Sub: "מתכוני צבע מבוססי AI המותאמים לפרופיל השיער שלך",
+    card2Title: "אבחון חכם",
+    card2Sub: "ניתוח שלב אחר שלב לתוצאות מושלמות וללא נזק",
+    card3Title: "רשימת קניות מיידית",
+    card3Sub: "הזמנה בלחיצה אחת דרך WhatsApp לכל מה שצריך",
+    cta: "בואי נתחיל ←",
+    ctaStart: "התחילי אבחון ←",
+    warningTitle: "מידע בטיחותי חשוב",
+    warningBody:
+      "לפני כל תהליך צביעת שיער, חובה לבצע בדיקת רגישות לחומרים כדי למנוע תגובות אלרגיות. בנוסף, מומלץ תמיד לבצע בדיקת טסט על חלק קטן ונסתר לפני מריחת התערובת על כל הראש.",
+    font: "var(--font-rubik), Arial, sans-serif",
+    paywallTitle: "ניצלת את האבחון החינמי שלך!",
+    paywallBody:
+      "כדי להמשיך ולקבל נוסחאות צבע וכימיה מדויקות ללא הגבלה, אנא בחרי את אחד ממסלולי הפרימיום שלנו למטה.",
+    packagesTitle: "הצעת חבילות",
+    packagesSub: "בחרי את המסלול המתאים לך",
+    upgradeBtn: "שדרגי עכשיו",
+    recommendedBadge: "מומלץ",
+    monthlyFeatures: [
+      "אבחונים ונוסחאות ללא הגבלה",
+      "רשימות קניות מיידיות",
+      "שיתוף דרך WhatsApp",
+      "תמיכה מקצועית",
+    ],
+  },
+  ar: {
+    switchLabel: "עברית",
+    tagline: "خبيرتك الشخصية في تلوين الشعر",
+    card1Title: "تركيبة احترافية",
+    card1Sub: "وصفات تلوين بالذكاء الاصطناعي مخصصة لملف شعرك",
+    card2Title: "تشخيص ذكي",
+    card2Sub: "تحليل خطوة بخطوة لنتائج مثالية بدون أضرار",
+    card3Title: "قائمة تسوق فورية",
+    card3Sub: "طلب بنقرة واحدة عبر واتساب لكل ما تحتاجينه",
+    cta: "هيّا نبدأ ←",
+    ctaStart: "ابدئي التشخيص ←",
+    warningTitle: "معلومات سلامة مهمة",
+    warningBody:
+      "قبل أي عملية صباغة شعر، يجب إجراء اختبار حساسية للمواد لتجنب أي تفاعلات تحسسية. كما يُنصح دائمًا بإجراء اختبار على خصلة صغيرة وخفية قبل تطبيق الخليط على كامل الشعر.",
+    font: "var(--font-cairo), Arial, sans-serif",
+    paywallTitle: "لقد استخدمتِ تشخيصكِ المجاني!",
+    paywallBody:
+      "للمتابعة والحصول على تركيبات ألوان وكيمياء دقيقة بلا حدود، يرجى اختيار إحدى خطط بريميوم أدناه.",
+    packagesTitle: "عروض الباقات",
+    packagesSub: "اختاري الخطة المناسبة لكِ",
+    upgradeBtn: "ترقية الآن",
+    recommendedBadge: "موصى به",
+    monthlyFeatures: [
+      "تشخيصات وتركيبات بلا حدود",
+      "قوائم تسوق فورية",
+      "المشاركة عبر واتساب",
+      "دعم احترافي",
+    ],
+  },
+} as const;
+
+type Lang = keyof typeof translations;
+
+// ─── Value prop card data ─────────────────────────────────────────────────────
+const CARDS = [
+  {
+    key: "card1",
+    Icon: Sparkles,
+    gradient: "from-fuchsia-500/40 to-violet-600/40",
+    glow: "shadow-fuchsia-500/25",
+    iconColor: "text-fuchsia-300",
+  },
+  {
+    key: "card2",
+    Icon: ClipboardList,
+    gradient: "from-violet-500/40 to-purple-700/40",
+    glow: "shadow-violet-500/25",
+    iconColor: "text-violet-300",
+  },
+  {
+    key: "card3",
+    Icon: ShoppingBag,
+    gradient: "from-pink-500/40 to-rose-600/40",
+    glow: "shadow-pink-500/25",
+    iconColor: "text-pink-300",
+  },
+] as const;
+
+// ─── Logo ─────────────────────────────────────────────────────────────────────
+function LogoMark() {
+  return (
+    <div className="mb-3 drop-shadow-[0_0_40px_rgba(220,100,255,0.4)]">
+      <Image src="/logo.png" alt="TintMe" width={190} height={250} priority />
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function Home() {
+  const [lang, setLang] = useState<Lang>("he");
+  const t = translations[lang];
+  const router = useRouter();
+
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
+  const { signOut } = useAuthActions();
+  const formulaCount = useQuery(api.formulas.getCount);
+  const currentUser = useQuery(api.users.getCurrentUser);
+  const updateUserType = useMutation(api.users.updateUserType);
+
+  const [showPaywallAlert, setShowPaywallAlert] = useState(false);
+  const [showPaywallModal, setShowPaywallModal] = useState(false);
+
+  const packagesRef = useRef<HTMLDivElement>(null);
+
+  const isCountLoading = isAuthenticated && formulaCount === undefined;
+  const isPaid = currentUser?.userType === "paid";
+  const isBlocked = isAuthenticated && !isPaid && typeof formulaCount === "number" && formulaCount >= 1;
+
+  function handleLangSwitch() {
+    setLang((l) => (l === "he" ? "ar" : "he"));
+  }
+
+  function handleStart() {
+    localStorage.setItem("tintme_lang", lang);
+
+    if (!isAuthenticated) {
+      router.push("/sign-in");
+      return;
+    }
+
+    if (isBlocked) {
+      setShowPaywallAlert(true);
+      setTimeout(() => {
+        packagesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+      return;
+    }
+
+    // count === 0 — first free diagnosis
+    router.push("/page1");
+  }
+
+  async function handleMockUpgrade() {
+    await updateUserType({ userType: "paid" });
+  }
+
+  const ctaLabel = isAuthenticated && !isBlocked ? t.ctaStart : t.cta;
+
+  return (
+    <div dir="rtl" className="relative min-h-screen overflow-hidden" style={{ fontFamily: t.font }}>
+      {/* ── Background ─────────────────────────────────────────────────────── */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#3b0764] via-[#4d074e] to-[#1e0736]" />
+      <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-fuchsia-600/30 blur-3xl" />
+      <div className="pointer-events-none absolute -left-32 top-[35%] h-[28rem] w-[28rem] rounded-full bg-violet-700/25 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-16 right-1/4 h-72 w-72 rounded-full bg-rose-500/20 blur-3xl" />
+
+      {/* ── Content ────────────────────────────────────────────────────────── */}
+      <div className="relative z-10 flex min-h-screen flex-col px-5 pb-16 pt-6">
+
+        {/* Header: language switcher + auth button */}
+        <div className="flex items-center justify-between gap-2">
+          {/* Auth: login button or user name + logout */}
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-sm font-medium text-white/90 backdrop-blur-md">
+                {currentUser?.fullName ?? ""}
+              </span>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/70 backdrop-blur-md transition-all duration-200 hover:bg-white/20 active:scale-95"
+              >
+                {lang === "he" ? "יציאה" : "خروج"}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => router.push("/sign-in")}
+              className="rounded-full border border-fuchsia-400/50 bg-fuchsia-500/20 px-4 py-1.5 text-sm font-semibold text-fuchsia-200 backdrop-blur-md transition-all duration-200 hover:bg-fuchsia-500/30 active:scale-95"
+            >
+              {lang === "he" ? "כניסה / הרשמה" : "دخول / تسجيل"}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleLangSwitch}
+            className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-md transition-all duration-200 hover:bg-white/20 active:scale-95"
+          >
+            {t.switchLabel}
+          </button>
+        </div>
+
+        {/* Hero */}
+        <div className="mt-8 flex flex-col items-center text-center">
+          <LogoMark />
+          <h1 className="bg-gradient-to-b from-white to-white/80 bg-clip-text text-5xl font-black tracking-tight text-transparent drop-shadow-lg">
+            TintMe
+          </h1>
+          <p className="mt-2 max-w-xs text-base font-medium leading-relaxed text-white/60">
+            {t.tagline}
+          </p>
+        </div>
+
+        {/* Value prop cards */}
+        <div className="mt-9 flex flex-col gap-3.5">
+          {CARDS.map(({ key, Icon, gradient, glow, iconColor }) => {
+            const title = t[`${key}Title` as keyof typeof t] as string;
+            const sub = t[`${key}Sub` as keyof typeof t] as string;
+            return (
+              <div
+                key={key}
+                className="flex items-center gap-4 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md"
+              >
+                <div
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-gradient-to-br shadow-lg ${gradient} ${glow}`}
+                >
+                  <Icon className={`h-6 w-6 ${iconColor}`} />
+                </div>
+                <div className="flex-1 text-right">
+                  <p className="font-bold text-white">{title}</p>
+                  <p className="mt-0.5 text-sm leading-snug text-white/60">{sub}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Safety Warning */}
+        <div className="mt-6 rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-500/10 via-yellow-400/5 to-orange-500/10 p-4 backdrop-blur-md shadow-lg shadow-amber-900/20">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-400/15">
+              <AlertTriangle className="h-5 w-5 text-amber-300" />
+            </div>
+            <div className="flex-1 text-right">
+              <p className="font-bold text-amber-200 text-sm tracking-wide">{t.warningTitle}</p>
+              <p className="mt-1 text-xs leading-relaxed text-amber-100/70">{t.warningBody}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="mt-10">
+          <button
+            type="button"
+            onClick={handleStart}
+            disabled={authLoading || isCountLoading}
+            className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-l from-[#7b2ff7] via-[#d4148c] to-[#f72585] px-8 py-4 text-lg font-bold text-white shadow-2xl shadow-fuchsia-900/50 transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            <span className="pointer-events-none absolute inset-0 translate-x-full bg-gradient-to-l from-white/15 via-transparent to-transparent transition-transform duration-500 group-hover:translate-x-0" />
+            <span className="relative">
+              {authLoading || isCountLoading ? "..." : ctaLabel}
+            </span>
+          </button>
+        </div>
+
+        {/* ── Paywall Alert ──────────────────────────────────────────────────── */}
+        {showPaywallAlert && (
+          <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="rounded-2xl border border-fuchsia-400/40 bg-gradient-to-br from-fuchsia-900/60 via-violet-900/50 to-purple-900/60 p-5 backdrop-blur-md shadow-xl shadow-fuchsia-900/30">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-fuchsia-400/30 bg-fuchsia-500/20">
+                  <Crown className="h-5 w-5 text-fuchsia-300" />
+                </div>
+                <div className="flex-1 text-right">
+                  <p className="font-bold text-fuchsia-200 text-base leading-snug">
+                    {t.paywallTitle}
+                  </p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-white/70">
+                    {t.paywallBody}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Packages Section ───────────────────────────────────────────────── */}
+        <div ref={packagesRef} id="packages" className="mt-12 scroll-mt-6">
+          {/* Section header */}
+          <div className="mb-6 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-4 py-1.5 mb-3">
+              <Crown className="h-3.5 w-3.5 text-fuchsia-300" />
+              <span className="text-fuchsia-300 text-xs font-semibold tracking-widest uppercase">
+                Premium
+              </span>
+            </div>
+            <h2 className="text-2xl font-black text-white">{t.packagesTitle}</h2>
+            <p className="mt-1 text-sm text-white/50">{t.packagesSub}</p>
+          </div>
+
+          {/* Plan cards */}
+          <div className="flex flex-col gap-4">
+            {/* Monthly */}
+            <div className="relative rounded-2xl border border-white/15 bg-white/8 p-5 backdrop-blur-md">
+              <div className="flex items-start justify-between gap-3">
+                <div className="text-right">
+                  <p className="font-bold text-lg text-white">{PLAN_DISPLAY.monthly.title}</p>
+                  <p className="text-white/50 text-sm">{PLAN_DISPLAY.monthly.subtitle}</p>
+                  <p className="mt-2 text-3xl font-extrabold text-white">
+                    {PLAN_DISPLAY.monthly.priceLine}
+                    <span className="text-sm font-normal text-white/50 mr-1">
+                      / {PLAN_DISPLAY.monthly.subtitle}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/30 bg-violet-500/20">
+                  <Sparkles className="h-5 w-5 text-violet-300" />
+                </div>
+              </div>
+              <ul className="mt-4 space-y-2">
+                {t.monthlyFeatures.map((feature) => (
+                  <li key={feature} className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 shrink-0 text-fuchsia-400" />
+                    <span className="text-sm text-white/75">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={() => setShowPaywallModal(true)}
+                className="mt-5 w-full rounded-xl border border-white/20 bg-white/10 py-3 text-sm font-bold text-white transition-all hover:bg-white/20 active:scale-95"
+              >
+                {t.upgradeBtn}
+              </button>
+            </div>
+
+            {/* Yearly — recommended */}
+            <div className="relative rounded-2xl border-2 border-fuchsia-400/60 bg-gradient-to-br from-fuchsia-900/40 via-violet-900/30 to-purple-900/40 p-5 backdrop-blur-md shadow-lg shadow-fuchsia-900/30">
+              {/* Recommended badge */}
+              <div className="absolute -top-3 right-5 flex items-center gap-1.5 rounded-full bg-gradient-to-l from-fuchsia-500 to-violet-600 px-3 py-1 shadow-md">
+                <Star className="h-3 w-3 text-white" fill="white" />
+                <span className="text-white text-xs font-bold">{t.recommendedBadge}</span>
+              </div>
+
+              <div className="flex items-start justify-between gap-3 pt-1">
+                <div className="text-right">
+                  <p className="font-bold text-lg text-white">{PLAN_DISPLAY.yearly.title}</p>
+                  <p className="text-white/50 text-sm">{PLAN_DISPLAY.yearly.subtitle}</p>
+                  <p className="mt-2 text-3xl font-extrabold text-white">
+                    {PLAN_DISPLAY.yearly.priceLine}
+                    <span className="text-sm font-normal text-white/50 mr-1">
+                      / {PLAN_DISPLAY.yearly.subtitle}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-fuchsia-400/30 bg-fuchsia-500/20">
+                  <Crown className="h-5 w-5 text-fuchsia-300" />
+                </div>
+              </div>
+              <ul className="mt-4 space-y-2">
+                {t.monthlyFeatures.map((feature) => (
+                  <li key={feature} className="flex items-center gap-2.5">
+                    <Check className="h-4 w-4 shrink-0 text-fuchsia-400" />
+                    <span className="text-sm text-white/75">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={() => setShowPaywallModal(true)}
+                className="group mt-5 w-full overflow-hidden rounded-xl bg-gradient-to-l from-[#7b2ff7] via-[#d4148c] to-[#f72585] py-3 text-sm font-bold text-white shadow-lg shadow-fuchsia-900/40 transition-all hover:scale-[1.02] active:scale-[0.97]"
+              >
+                {t.upgradeBtn}
+              </button>
+            </div>
+          </div>
+        </div>
+        {/* /packages */}
+
+
+      </div>
+
+      {/* ── Paywall Modal ──────────────────────────────────────────────────────── */}
+      <PaywallModal
+        open={showPaywallModal}
+        onOpenChange={setShowPaywallModal}
+        onMockUpgradeToPaid={handleMockUpgrade}
+      />
+
+    </div>
+  );
+}

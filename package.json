@@ -17,6 +17,7 @@
     "ultracite": "ultracite"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.106.0",
     "@convex-dev/auth": "^0.0.90",
     "@convex-dev/polar": "^0.7.3",
     "@radix-ui/react-accordion": "^1.2.12",

@@ -73,7 +73,10 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const displayName = user?.fullName || user?.email?.split("@")[0] || "משתמש";
+  const displayName =
+    (user?.fullName && user.fullName !== "User" ? user.fullName : null) ??
+    user?.email?.split("@")[0] ??
+    "משתמש";
   const updateUserType = useMutation(api.users.updateUserType); // שינוי סטטוס משתמש (למצב בדיקה)
   const deleteMyAccount = useMutation(api.users.deleteMyAccount); // מחיקת חשבון (Convex)
 

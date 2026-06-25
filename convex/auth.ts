@@ -23,7 +23,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           await ctx.db.patch(args.existingUserId, {
             email: args.profile.email,
             emailVerified: args.profile.emailVerified ?? false,
-            fullName: args.profile.name || "User",
+            fullName: args.profile.name || args.profile.email?.split("@")[0] || "משתמש",
             updatedAt: now,
           });
           return args.existingUserId;
@@ -34,7 +34,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       return await ctx.db.insert("users", {
         email: args.profile.email ?? "",
         emailVerified: args.profile.emailVerified ?? false,
-        fullName: args.profile.name || "User",
+        fullName: args.profile.name || args.profile.email?.split("@")[0] || "משתמש",
         role: "user", // תפקיד ברירת מחדל
         isActive: true, // משתמש פעיל כברירת מחדל
         createdAt: now,

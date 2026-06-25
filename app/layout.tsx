@@ -21,8 +21,8 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "Hebrew RTL App",
-  description: "Hebrew RTL Next.js Template",
+  title: "TentMe",
+  description: "TentMe",
 };
 
 // רכיב ה-Layout הראשי של האפליקציה

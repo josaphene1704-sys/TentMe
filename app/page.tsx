@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import PaywallModal from "@/components/payments/PaywallModal";
 import { PLAN_DISPLAY } from "@/config/planDisplay";
@@ -134,6 +134,15 @@ export default function Home() {
   const [showPaywallModal, setShowPaywallModal] = useState(false);
 
   const packagesRef = useRef<HTMLDivElement>(null);
+  const paywallAlertRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showPaywallAlert && paywallAlertRef.current) {
+      setTimeout(() => {
+        paywallAlertRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
+    }
+  }, [showPaywallAlert]);
 
   const isCountLoading = isAuthenticated && formulaCount === undefined;
   const isPaid = currentUser?.userType === "paid";
@@ -186,7 +195,9 @@ export default function Home() {
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-sm font-medium text-white/90 backdrop-blur-md">
-                {currentUser?.fullName ?? ""}
+                {(currentUser?.fullName && currentUser.fullName !== "User"
+                  ? currentUser.fullName
+                  : currentUser?.email?.split("@")[0]) ?? ""}
               </span>
               <button
                 type="button"
@@ -280,23 +291,32 @@ export default function Home() {
 
         {/* ── Paywall Alert ──────────────────────────────────────────────────── */}
         {showPaywallAlert && (
-          <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="rounded-2xl border border-fuchsia-400/40 bg-gradient-to-br from-fuchsia-900/60 via-violet-900/50 to-purple-900/60 p-5 backdrop-blur-md shadow-xl shadow-fuchsia-900/30">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-fuchsia-400/30 bg-fuchsia-500/20">
-                  <Crown className="h-5 w-5 text-fuchsia-300" />
-                </div>
-                <div className="flex-1 text-right">
-                  <p className="font-bold text-fuchsia-200 text-base leading-snug">
-                    {t.paywallTitle}
-                  </p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-white/70">
-                    {t.paywallBody}
-                  </p>
+          <>
+            <style>{`
+              @keyframes paywallBlink {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(217,70,239,0); border-color: rgba(232,121,249,0.4); }
+                50% { box-shadow: 0 0 32px 12px rgba(217,70,239,0.45); border-color: rgba(232,121,249,1); }
+              }
+              .paywall-blink { animation: paywallBlink 0.75s ease-in-out 8; }
+            `}</style>
+            <div ref={paywallAlertRef} className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="paywall-blink rounded-2xl border border-fuchsia-400/40 bg-gradient-to-br from-fuchsia-900/60 via-violet-900/50 to-purple-900/60 p-5 backdrop-blur-md shadow-xl shadow-fuchsia-900/30">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-fuchsia-400/30 bg-fuchsia-500/20">
+                    <Crown className="h-5 w-5 text-fuchsia-300" />
+                  </div>
+                  <div className="flex-1 text-right">
+                    <p className="font-bold text-fuchsia-200 text-base leading-snug">
+                      {t.paywallTitle}
+                    </p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-white/70">
+                      {t.paywallBody}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* ── Packages Section ───────────────────────────────────────────────── */}

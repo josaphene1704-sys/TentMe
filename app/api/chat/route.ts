@@ -13,8 +13,6 @@ type ChatMessage = {
   content: string;
 };
 
-const client = new Anthropic();
-
 export async function POST(req: NextRequest) {
   try {
     const { messages, hairContext } = (await req.json()) as {
@@ -26,6 +24,8 @@ export async function POST(req: NextRequest) {
     if (!apiKey) {
       return NextResponse.json({ error: "API key not configured" }, { status: 500 });
     }
+
+    const client = new Anthropic({ apiKey });
 
     const systemText = hairContext
       ? `${SYSTEM_PROMPT}\n\n--- נתוני שיער של המשתמשת ---\n${hairContext}`
@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ text });
   } catch (err) {
-    console.error("Claude API error", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Claude API error:", message);
+    return NextResponse.json({ error: "Internal server error", detail: message }, { status: 500 });
   }
 }

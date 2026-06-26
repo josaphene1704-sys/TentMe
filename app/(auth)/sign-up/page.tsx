@@ -112,7 +112,6 @@ export default function SignUpPage() {
     setError("");
     try {
       await signIn("password", { email, password, flow: "signUp" });
-      sessionStorage.setItem("tintme_just_logged_in", "1");
       if (rememberMe) {
         localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
       } else {
@@ -138,10 +137,8 @@ export default function SignUpPage() {
   const handleGoogle = async () => {
     setIsGoogleLoading(true);
     try {
-      sessionStorage.setItem("tintme_just_logged_in", "1");
-      await signIn("google");
+      await signIn("google", { redirectTo: "/page1" });
     } catch {
-      sessionStorage.removeItem("tintme_just_logged_in");
       setIsGoogleLoading(false);
     }
   };

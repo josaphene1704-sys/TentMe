@@ -187,7 +187,9 @@ export default function Home() {
       <div className="pointer-events-none absolute bottom-16 right-1/4 h-72 w-72 rounded-full bg-rose-500/20 blur-3xl" />
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
-      <div className="relative z-10 flex min-h-screen flex-col px-5 pb-16 pt-6">
+      {/* Outer: full-screen. Inner: centered column capped at readable width */}
+      <div className="relative z-10 flex min-h-screen flex-col px-5 pb-16 pt-6 md:px-8 lg:px-0">
+        <div className="mx-auto w-full max-w-sm md:max-w-2xl lg:max-w-4xl">
 
         {/* Header: language switcher + auth button */}
         <div className="flex items-center justify-between gap-2">
@@ -229,30 +231,30 @@ export default function Home() {
         {/* Hero */}
         <div className="mt-8 flex flex-col items-center text-center">
           <LogoMark />
-          <h1 className="bg-gradient-to-b from-white to-white/80 bg-clip-text text-5xl font-black tracking-tight text-transparent drop-shadow-lg">
+          <h1 className="bg-gradient-to-b from-white to-white/80 bg-clip-text text-5xl font-black tracking-tight text-transparent drop-shadow-lg md:text-6xl lg:text-7xl">
             TintMe
           </h1>
-          <p className="mt-2 max-w-xs text-base font-medium leading-relaxed text-white/60">
+          <p className="mt-2 max-w-xs text-base font-medium leading-relaxed text-white/60 md:max-w-sm md:text-lg">
             {t.tagline}
           </p>
         </div>
 
-        {/* Value prop cards */}
-        <div className="mt-9 flex flex-col gap-3.5">
+        {/* Value prop cards — 1 col mobile / 3 col tablet+ */}
+        <div className="mt-9 grid grid-cols-1 gap-3.5 md:grid-cols-3">
           {CARDS.map(({ key, Icon, gradient, glow, iconColor }) => {
             const title = t[`${key}Title` as keyof typeof t] as string;
             const sub = t[`${key}Sub` as keyof typeof t] as string;
             return (
               <div
                 key={key}
-                className="flex items-center gap-4 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md"
+                className="flex items-center gap-4 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md md:flex-col md:items-start md:gap-3"
               >
                 <div
                   className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-gradient-to-br shadow-lg ${gradient} ${glow}`}
                 >
                   <Icon className={`h-6 w-6 ${iconColor}`} />
                 </div>
-                <div className="flex-1 text-right">
+                <div className="flex-1 text-right md:text-right">
                   <p className="font-bold text-white">{title}</p>
                   <p className="mt-0.5 text-sm leading-snug text-white/60">{sub}</p>
                 </div>
@@ -333,8 +335,8 @@ export default function Home() {
             <p className="mt-1 text-sm text-white/50">{t.packagesSub}</p>
           </div>
 
-          {/* Plan cards */}
-          <div className="flex flex-col gap-4">
+          {/* Plan cards — 1 col mobile / 2 col tablet+ */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Monthly */}
             <div className="relative rounded-2xl border border-white/15 bg-white/8 p-5 backdrop-blur-md">
               <div className="flex items-start justify-between gap-3">
@@ -412,7 +414,7 @@ export default function Home() {
         </div>
         {/* /packages */}
 
-
+        </div>{/* /inner max-w container */}
       </div>
 
       {/* ── Paywall Modal ──────────────────────────────────────────────────────── */}

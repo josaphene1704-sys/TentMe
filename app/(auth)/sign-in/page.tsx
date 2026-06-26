@@ -86,7 +86,6 @@ export default function SignInPage() {
     setError("");
     try {
       await signIn("password", { email, password, flow: "signIn" });
-      sessionStorage.setItem("tintme_just_logged_in", "1");
       router.push("/page1");
     } catch (err: unknown) {
       const msg = (err as { message?: string }).message ?? "";
@@ -103,10 +102,8 @@ export default function SignInPage() {
   const handleGoogle = async () => {
     setIsGoogleLoading(true);
     try {
-      sessionStorage.setItem("tintme_just_logged_in", "1");
-      await signIn("google");
+      await signIn("google", { redirectTo: "/page1" });
     } catch {
-      sessionStorage.removeItem("tintme_just_logged_in");
       setIsGoogleLoading(false);
     }
   };
